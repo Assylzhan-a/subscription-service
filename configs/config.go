@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -12,6 +13,7 @@ import (
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
+	JWT      JWTConfig
 }
 
 // ServerConfig holds the server configuration
@@ -28,6 +30,13 @@ type DatabaseConfig struct {
 	Password string
 	Name     string
 	SSLMode  string
+}
+
+// JWTConfig holds the JWT configuration
+type JWTConfig struct {
+	SecretKey    string
+	Issuer       string
+	ExpiresInMin int
 }
 
 // LoadConfig loads the application configuration from environment variables
@@ -48,6 +57,16 @@ func LoadConfig() (*Config, error) {
 			Name:     getEnv("DB_NAME", "subscription_service"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
 		},
+		JWT: JWTConfig{
+			SecretKey:    getEnv("JWT_SECRET_KEY", "your-secret-key"),
+			Issuer:       getEnv("JWT_ISSUER", "subscription-service"),
+			ExpiresInMin: getEnvAsInt("JWT_EXPIRES_IN_MIN", 60), // 1 hour default
+		},
+	}
+
+	// Validate required configuration
+	if config.JWT.SecretKey == "your-secret-key" {
+		fmt.Println("WARNING: Using default JWT secret key. This is insecure!")
 	}
 
 	return config, nil
@@ -59,6 +78,11 @@ func (c *DatabaseConfig) DatabaseURL() string {
 		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
 		c.User, c.Password, c.Host, c.Port, c.Name, c.SSLMode,
 	)
+}
+
+// GetJWTExpirationDuration returns the JWT expiration duration
+func (c *JWTConfig) GetJWTExpirationDuration() time.Duration {
+	return time.Duration(c.ExpiresInMin) * time.Minute
 }
 
 // Helper function to get environment variable with fallback

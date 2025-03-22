@@ -7,10 +7,14 @@ import (
 	"net/http"
 
 	"github.com/assylzhan-a/subscription-service/configs"
+	"github.com/assylzhan-a/subscription-service/internal/app/auth"
 	"github.com/assylzhan-a/subscription-service/internal/app/product"
+	"github.com/assylzhan-a/subscription-service/internal/app/subscription"
+	"github.com/assylzhan-a/subscription-service/internal/middleware"
 	"github.com/assylzhan-a/subscription-service/internal/repository/migrations"
 	"github.com/assylzhan-a/subscription-service/internal/repository/postgres"
 	httpTransport "github.com/assylzhan-a/subscription-service/internal/transport/http"
+	"github.com/assylzhan-a/subscription-service/pkg/jwt"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
@@ -44,13 +48,23 @@ func main() {
 	}
 
 	// Initialize repositories
+	userRepo := postgres.NewUserRepository(db)
 	productRepo := postgres.NewProductRepository(db)
+	subscriptionRepo := postgres.NewSubscriptionRepository(db)
+
+	// Initialize JWT manager
+	jwtManager := jwt.NewManager(config.JWT.SecretKey, config.JWT.Issuer)
+
+	// Initialize auth middleware
+	middleware.InitAuthMiddleware(jwtManager)
 
 	// Initialize services
+	authService := auth.NewService(userRepo, jwtManager, config.JWT.GetJWTExpirationDuration())
 	productService := product.NewService(productRepo)
+	subscriptionService := subscription.NewService(subscriptionRepo, productRepo)
 
 	// Initialize HTTP router
-	router := httpTransport.NewRouter(productService)
+	router := httpTransport.NewRouter(authService, productService, subscriptionService)
 	router.Setup()
 
 	// Start HTTP server

@@ -28,6 +28,14 @@ func Migrate(db *sql.DB) error {
 			name: "02_create_products_table",
 			up:   createProductsTable,
 		},
+		{
+			name: "03_create_subscriptions_table",
+			up:   createSubscriptionsTable,
+		},
+		{
+			name: "04_create_subscription_state_changes_table",
+			up:   createSubscriptionStateChangesTable,
+		},
 	}
 
 	// Begin transaction
@@ -108,6 +116,34 @@ const (
 			is_active BOOLEAN NOT NULL DEFAULT TRUE,
 			created_at TIMESTAMP NOT NULL,
 			updated_at TIMESTAMP NOT NULL
+		)
+	`
+
+	createSubscriptionsTable = `
+		CREATE TABLE IF NOT EXISTS subscriptions (
+			id UUID PRIMARY KEY,
+			user_id UUID NOT NULL REFERENCES users(id),
+			product_id UUID NOT NULL REFERENCES products(id),
+			status VARCHAR(20) NOT NULL,
+			start_date TIMESTAMP NOT NULL,
+			end_date TIMESTAMP NOT NULL,
+			trial_end_date TIMESTAMP NULL,
+			original_price DECIMAL(10, 2) NOT NULL,
+			tax_amount DECIMAL(10, 2) NOT NULL,
+			total_amount DECIMAL(10, 2) NOT NULL,
+			created_at TIMESTAMP NOT NULL,
+			updated_at TIMESTAMP NOT NULL
+		)
+	`
+
+	createSubscriptionStateChangesTable = `
+		CREATE TABLE IF NOT EXISTS subscription_state_changes (
+			id UUID PRIMARY KEY,
+			subscription_id UUID NOT NULL REFERENCES subscriptions(id),
+			previous_state VARCHAR(20) NOT NULL,
+			new_state VARCHAR(20) NOT NULL,
+			changed_at TIMESTAMP NOT NULL,
+			reason TEXT
 		)
 	`
 )

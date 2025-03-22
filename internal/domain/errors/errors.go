@@ -8,9 +8,20 @@ import (
 var (
 	ErrNotFound     = errors.New("resource not found")
 	ErrInvalidInput = errors.New("invalid input")
+	ErrUnauthorized = errors.New("unauthorized access")
+	ErrForbidden    = errors.New("forbidden access")
+
+	ErrUserNotFound       = errors.New("user not found")
+	ErrUserAlreadyExists  = errors.New("user already exists")
+	ErrInvalidCredentials = errors.New("invalid credentials")
 
 	ErrProductNotFound = errors.New("product not found")
 	ErrInactiveProduct = errors.New("product is not active")
+
+	ErrSubscriptionNotFound      = errors.New("subscription not found")
+	ErrSubscriptionNotActive     = errors.New("subscription is not active")
+	ErrSubscriptionInTrial       = errors.New("subscription is in trial period")
+	ErrSubscriptionAlreadyPaused = errors.New("subscription is already paused")
 )
 
 type ValidationError struct {
