@@ -414,6 +414,21 @@ subscription-service/
     └── jwt/                  # JWT utils
 ```
 
+
+## Running Tests
+
+The project includes unit tests for core business logic in the service layer. To run the tests:
+
+```bash
+# Run all tests
+go test ./...
+
+# Run tests with verbose output 
+go test -v ./...
+```
+
+The tests use mocked repositories to avoid database dependencies, focusing on testing the business logic in isolation.
+
 ## Design Decisions
 
 - **Decimal for Currency**: Used the decimal package for all money values to avoid floating-point precision issues
