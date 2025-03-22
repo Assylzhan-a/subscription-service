@@ -7,7 +7,10 @@ import (
 	"net/http"
 
 	"github.com/assylzhan-a/subscription-service/configs"
+	"github.com/assylzhan-a/subscription-service/internal/app/product"
 	"github.com/assylzhan-a/subscription-service/internal/repository/migrations"
+	"github.com/assylzhan-a/subscription-service/internal/repository/postgres"
+	httpTransport "github.com/assylzhan-a/subscription-service/internal/transport/http"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
@@ -40,20 +43,20 @@ func main() {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	// Initialize router
-	router := gin.Default()
+	// Initialize repositories
+	productRepo := postgres.NewProductRepository(db)
 
-	// Health check
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "ok",
-		})
-	})
+	// Initialize services
+	productService := product.NewService(productRepo)
+
+	// Initialize HTTP router
+	router := httpTransport.NewRouter(productService)
+	router.Setup()
 
 	// Start HTTP server
 	address := fmt.Sprintf(":%s", config.Server.Port)
 	log.Printf("Starting server on %s", address)
-	if err := http.ListenAndServe(address, router); err != nil {
+	if err := http.ListenAndServe(address, router.Engine()); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
