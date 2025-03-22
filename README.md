@@ -14,7 +14,7 @@ This service handles several key features:
 
 ## Tech Stack
 
-- **Language**: Go 1.21+
+- **Language**: Go 1.23.1+
 - **Web Framework**: Gin-Gonic
 - **Database**: PostgreSQL
 - **Auth**: JWT tokens
