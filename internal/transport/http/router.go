@@ -4,6 +4,7 @@ import (
 	"github.com/assylzhan-a/subscription-service/internal/app/auth"
 	"github.com/assylzhan-a/subscription-service/internal/app/product"
 	"github.com/assylzhan-a/subscription-service/internal/app/subscription"
+	"github.com/assylzhan-a/subscription-service/internal/app/voucher"
 	"github.com/assylzhan-a/subscription-service/internal/handlers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -14,18 +15,21 @@ type Router struct {
 	authService         *auth.Service
 	productService      *product.Service
 	subscriptionService *subscription.Service
+	voucherService      *voucher.Service
 }
 
 func NewRouter(
 	authService *auth.Service,
 	productService *product.Service,
 	subscriptionService *subscription.Service,
+	voucherService *voucher.Service,
 ) *Router {
 	return &Router{
 		engine:              gin.Default(),
 		authService:         authService,
 		productService:      productService,
 		subscriptionService: subscriptionService,
+		voucherService:      voucherService,
 	}
 }
 
@@ -43,10 +47,12 @@ func (r *Router) Setup() {
 	authHandler := handlers.NewAuthHandler(r.authService)
 	productHandler := handlers.NewProductHandler(r.productService)
 	subscriptionHandler := handlers.NewSubscriptionHandler(r.subscriptionService)
+	voucherHandler := handlers.NewVoucherHandler(r.voucherService)
 
 	authHandler.RegisterRoutes(v1.Group("/auth"))
 	productHandler.RegisterRoutes(v1)
 	subscriptionHandler.RegisterRoutes(v1.Group("/subscriptions"))
+	voucherHandler.RegisterRoutes(v1)
 
 	// Health check
 	r.engine.GET("/health", func(c *gin.Context) {

@@ -3,6 +3,7 @@ package subscription
 import (
 	"context"
 	"fmt"
+	"github.com/shopspring/decimal"
 	"time"
 
 	"github.com/assylzhan-a/subscription-service/internal/domain/errors"
@@ -14,22 +15,26 @@ import (
 type Service struct {
 	repo        repository.SubscriptionRepository
 	productRepo repository.ProductRepository
+	voucherRepo repository.VoucherRepository
 }
 
 func NewService(
 	repo repository.SubscriptionRepository,
 	productRepo repository.ProductRepository,
+	voucherRepo repository.VoucherRepository,
 ) *Service {
 	return &Service{
 		repo:        repo,
 		productRepo: productRepo,
+		voucherRepo: voucherRepo,
 	}
 }
 
 type CreateSubscriptionInput struct {
-	UserID    uuid.UUID
-	ProductID uuid.UUID
-	WithTrial bool
+	UserID      uuid.UUID
+	ProductID   uuid.UUID
+	VoucherCode string
+	WithTrial   bool
 }
 
 func (i *CreateSubscriptionInput) Validate() errors.ValidationErrors {
@@ -96,6 +101,37 @@ func (s *Service) CreateSubscription(ctx context.Context, input CreateSubscripti
 		OriginalPrice: product.Price,
 		TaxAmount:     product.Price.Mul(product.TaxRate),
 		TotalAmount:   product.Price.Add(product.Price.Mul(product.TaxRate)),
+	}
+
+	// Apply voucher if provided
+	if input.VoucherCode != "" {
+		voucher, err := s.voucherRepo.GetByCode(ctx, input.VoucherCode)
+		if err != nil {
+			return nil, fmt.Errorf("invalid voucher code: %w", err)
+		}
+
+		// Validate voucher
+		if err := s.validateVoucher(voucher, product.ID); err != nil {
+			return nil, err
+		}
+
+		// Apply discount
+		var discountedPrice decimal.Decimal
+		if voucher.DiscountType == models.DiscountTypeFixed {
+			discountedPrice = product.Price.Sub(voucher.DiscountValue)
+		} else { // Percentage
+			discountedPrice = product.Price.Sub(product.Price.Mul(voucher.DiscountValue.Div(decimal.NewFromInt(100))))
+		}
+
+		// Ensure price doesn't go below zero
+		if discountedPrice.IsNegative() {
+			discountedPrice = decimal.NewFromInt(0)
+		}
+
+		subscription.VoucherID = &voucher.ID
+		subscription.DiscountedPrice = &discountedPrice
+		subscription.TaxAmount = discountedPrice.Mul(product.TaxRate)
+		subscription.TotalAmount = discountedPrice.Add(subscription.TaxAmount)
 	}
 
 	// Save subscription
@@ -228,6 +264,25 @@ func (s *Service) CancelSubscription(ctx context.Context, id uuid.UUID) error {
 	// Log state change
 	if err := s.repo.CreateStateChange(ctx, stateChange); err != nil {
 		return fmt.Errorf("failed to log state change: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) validateVoucher(voucher *models.Voucher, productID uuid.UUID) error {
+	// Check if voucher is active
+	if !voucher.IsActive {
+		return errors.ErrVoucherInactive
+	}
+
+	// Check if voucher is expired
+	if time.Now().After(voucher.ExpiresAt) {
+		return errors.ErrVoucherExpired
+	}
+
+	// Check if voucher is applicable to this product
+	if voucher.ProductID != nil && *voucher.ProductID != productID {
+		return errors.ErrVoucherInvalid
 	}
 
 	return nil

@@ -22,6 +22,11 @@ var (
 	ErrSubscriptionNotActive     = errors.New("subscription is not active")
 	ErrSubscriptionInTrial       = errors.New("subscription is in trial period")
 	ErrSubscriptionAlreadyPaused = errors.New("subscription is already paused")
+
+	ErrVoucherNotFound = errors.New("voucher not found")
+	ErrVoucherExpired  = errors.New("voucher is expired")
+	ErrVoucherInactive = errors.New("voucher is not active")
+	ErrVoucherInvalid  = errors.New("voucher is invalid")
 )
 
 type ValidationError struct {

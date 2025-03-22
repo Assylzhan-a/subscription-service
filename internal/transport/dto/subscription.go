@@ -8,24 +8,28 @@ import (
 )
 
 type CreateSubscriptionRequest struct {
-	ProductID string `json:"product_id" binding:"required,uuid"`
-	WithTrial bool   `json:"with_trial"`
+	ProductID   string `json:"product_id" binding:"required,uuid"`
+	VoucherCode string `json:"voucher_code"`
+	WithTrial   bool   `json:"with_trial"`
 }
 
 type SubscriptionResponse struct {
-	ID            string           `json:"id"`
-	UserID        string           `json:"user_id"`
-	ProductID     string           `json:"product_id"`
-	Status        string           `json:"status"`
-	StartDate     time.Time        `json:"start_date"`
-	EndDate       time.Time        `json:"end_date"`
-	TrialEndDate  *time.Time       `json:"trial_end_date,omitempty"`
-	OriginalPrice decimal.Decimal  `json:"original_price"`
-	TaxAmount     decimal.Decimal  `json:"tax_amount"`
-	TotalAmount   decimal.Decimal  `json:"total_amount"`
-	CreatedAt     time.Time        `json:"created_at"`
-	UpdatedAt     time.Time        `json:"updated_at"`
-	Product       *ProductResponse `json:"product,omitempty"`
+	ID              string           `json:"id"`
+	UserID          string           `json:"user_id"`
+	ProductID       string           `json:"product_id"`
+	VoucherID       *string          `json:"voucher_id,omitempty"`
+	Status          string           `json:"status"`
+	StartDate       time.Time        `json:"start_date"`
+	EndDate         time.Time        `json:"end_date"`
+	TrialEndDate    *time.Time       `json:"trial_end_date,omitempty"`
+	OriginalPrice   decimal.Decimal  `json:"original_price"`
+	DiscountedPrice *decimal.Decimal `json:"discounted_price,omitempty"`
+	TaxAmount       decimal.Decimal  `json:"tax_amount"`
+	TotalAmount     decimal.Decimal  `json:"total_amount"`
+	CreatedAt       time.Time        `json:"created_at"`
+	UpdatedAt       time.Time        `json:"updated_at"`
+	Product         *ProductResponse `json:"product,omitempty"`
+	Voucher         *VoucherResponse `json:"voucher,omitempty"`
 }
 
 type SubscriptionStateChangeResponse struct {
@@ -52,13 +56,27 @@ func MapSubscriptionToResponse(subscription *models.Subscription) SubscriptionRe
 		UpdatedAt:     subscription.UpdatedAt,
 	}
 
+	if subscription.VoucherID != nil {
+		voucherID := subscription.VoucherID.String()
+		response.VoucherID = &voucherID
+	}
+
 	if subscription.TrialEndDate != nil {
 		response.TrialEndDate = subscription.TrialEndDate
+	}
+
+	if subscription.DiscountedPrice != nil {
+		response.DiscountedPrice = subscription.DiscountedPrice
 	}
 
 	if subscription.Product != nil {
 		product := MapProductToResponse(subscription.Product)
 		response.Product = &product
+	}
+
+	if subscription.Voucher != nil {
+		voucher := MapVoucherToResponse(subscription.Voucher)
+		response.Voucher = &voucher
 	}
 
 	return response

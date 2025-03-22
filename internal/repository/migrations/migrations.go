@@ -29,11 +29,15 @@ func Migrate(db *sql.DB) error {
 			up:   createProductsTable,
 		},
 		{
-			name: "03_create_subscriptions_table",
+			name: "03_create_vouchers_table",
+			up:   createVouchersTable,
+		},
+		{
+			name: "04_create_subscriptions_table",
 			up:   createSubscriptionsTable,
 		},
 		{
-			name: "04_create_subscription_state_changes_table",
+			name: "05_create_subscription_state_changes_table",
 			up:   createSubscriptionStateChangesTable,
 		},
 	}
@@ -119,16 +123,32 @@ const (
 		)
 	`
 
+	createVouchersTable = `
+		CREATE TABLE IF NOT EXISTS vouchers (
+			id UUID PRIMARY KEY,
+			code VARCHAR(50) NOT NULL UNIQUE,
+			discount_type VARCHAR(10) NOT NULL,
+			discount_value DECIMAL(10, 2) NOT NULL,
+			product_id UUID NULL REFERENCES products(id),
+			is_active BOOLEAN NOT NULL DEFAULT TRUE,
+			expires_at TIMESTAMP NOT NULL,
+			created_at TIMESTAMP NOT NULL,
+			updated_at TIMESTAMP NOT NULL
+		)
+	`
+
 	createSubscriptionsTable = `
 		CREATE TABLE IF NOT EXISTS subscriptions (
 			id UUID PRIMARY KEY,
 			user_id UUID NOT NULL REFERENCES users(id),
 			product_id UUID NOT NULL REFERENCES products(id),
+			voucher_id UUID NULL REFERENCES vouchers(id),
 			status VARCHAR(20) NOT NULL,
 			start_date TIMESTAMP NOT NULL,
 			end_date TIMESTAMP NOT NULL,
 			trial_end_date TIMESTAMP NULL,
 			original_price DECIMAL(10, 2) NOT NULL,
+			discounted_price DECIMAL(10, 2) NULL,
 			tax_amount DECIMAL(10, 2) NOT NULL,
 			total_amount DECIMAL(10, 2) NOT NULL,
 			created_at TIMESTAMP NOT NULL,

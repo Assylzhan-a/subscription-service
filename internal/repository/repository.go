@@ -34,3 +34,14 @@ type SubscriptionRepository interface {
 	CreateStateChange(ctx context.Context, stateChange *models.SubscriptionStateChange) error
 	GetStateChangesBySubscriptionID(ctx context.Context, subscriptionID uuid.UUID) ([]*models.SubscriptionStateChange, error)
 }
+
+// VoucherRepository defines operations for voucher persistence
+type VoucherRepository interface {
+	Create(ctx context.Context, voucher *models.Voucher) error
+	GetByID(ctx context.Context, id uuid.UUID) (*models.Voucher, error)
+	GetByCode(ctx context.Context, code string) (*models.Voucher, error)
+	GetByProductID(ctx context.Context, productID uuid.UUID) ([]*models.Voucher, error)
+	GetAllActive(ctx context.Context) ([]*models.Voucher, error)
+	Update(ctx context.Context, voucher *models.Voucher) error
+	Delete(ctx context.Context, id uuid.UUID) error
+}

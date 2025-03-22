@@ -10,6 +10,7 @@ import (
 	"github.com/assylzhan-a/subscription-service/internal/app/auth"
 	"github.com/assylzhan-a/subscription-service/internal/app/product"
 	"github.com/assylzhan-a/subscription-service/internal/app/subscription"
+	"github.com/assylzhan-a/subscription-service/internal/app/voucher"
 	"github.com/assylzhan-a/subscription-service/internal/middleware"
 	"github.com/assylzhan-a/subscription-service/internal/repository/migrations"
 	"github.com/assylzhan-a/subscription-service/internal/repository/postgres"
@@ -51,6 +52,7 @@ func main() {
 	userRepo := postgres.NewUserRepository(db)
 	productRepo := postgres.NewProductRepository(db)
 	subscriptionRepo := postgres.NewSubscriptionRepository(db)
+	voucherRepo := postgres.NewVoucherRepository(db)
 
 	// Initialize JWT manager
 	jwtManager := jwt.NewManager(config.JWT.SecretKey, config.JWT.Issuer)
@@ -61,10 +63,11 @@ func main() {
 	// Initialize services
 	authService := auth.NewService(userRepo, jwtManager, config.JWT.GetJWTExpirationDuration())
 	productService := product.NewService(productRepo)
-	subscriptionService := subscription.NewService(subscriptionRepo, productRepo)
+	subscriptionService := subscription.NewService(subscriptionRepo, productRepo, voucherRepo)
+	voucherService := voucher.NewService(voucherRepo, productRepo)
 
 	// Initialize HTTP router
-	router := httpTransport.NewRouter(authService, productService, subscriptionService)
+	router := httpTransport.NewRouter(authService, productService, subscriptionService, voucherService)
 	router.Setup()
 
 	// Start HTTP server
